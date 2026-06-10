@@ -13,9 +13,11 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
     "rootDir": "./src",
-    "incremental": true,
+    "types": [
+      "node",
+      "multer"
+    ],
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
@@ -24,5 +26,6 @@
     "noFallthroughCasesInSwitch": false,
     "ignoreDeprecations": "5.0"
   },
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "test", "dist"]
 }

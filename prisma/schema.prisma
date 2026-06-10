@@ -1,0 +1,127 @@
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["inventory_domain"]
+}
+
+enum StorageLocation {
+  FRIDGE
+  FREEZER
+  PANTRY
+
+  @@schema("inventory_domain")
+}
+
+enum MeasurementUnit {
+  UNIT
+  GRAM
+  KILOGRAM
+  MILLILITER
+  LITER
+  PACKAGE
+
+  @@schema("inventory_domain")
+}
+
+enum CategoryScope {
+  SYSTEM
+  USER
+
+  @@schema("inventory_domain")
+}
+
+model InventoryCategory {
+  id             String        @id @default(uuid()) @db.Uuid
+
+  ownerUserId    String?       @map("owner_user_id") @db.Uuid
+  scope          CategoryScope
+
+  name           String
+  normalizedName String        @map("normalized_name")
+  systemCode     String?       @unique @map("system_code")
+
+  icon           String?
+  color          String?
+
+  isActive       Boolean       @default(true) @map("is_active")
+  sortOrder      Int           @default(0) @map("sort_order")
+
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  items          InventoryItem[]
+
+  @@unique([ownerUserId, normalizedName])
+  @@index([scope, isActive])
+  @@index([ownerUserId, isActive])
+  @@map("inventory_categories")
+  @@schema("inventory_domain")
+}
+
+model InventoryItem {
+  id              String             @id @default(uuid()) @db.Uuid
+  userId          String             @map("user_id") @db.Uuid
+
+  name            String
+  brand           String?
+
+  categoryId      String?            @map("category_id") @db.Uuid
+  category        InventoryCategory? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  quantity        Decimal            @default(1) @db.Decimal(12, 3)
+  unit            MeasurementUnit    @default(UNIT)
+
+  storageLocation StorageLocation    @map("storage_location")
+
+  manufacturedAt  DateTime?          @map("manufactured_at") @db.Date
+  expiresAt       DateTime?          @map("expires_at") @db.Date
+  openedAt        DateTime?          @map("opened_at") @db.Date
+
+  notes           String?
+  version         Int                @default(0)
+
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+
+  photos          InventoryItemPhoto[]
+
+  @@index([userId])
+  @@index([userId, storageLocation])
+  @@index([userId, expiresAt])
+  @@index([userId, categoryId])
+  @@map("inventory_items")
+  @@schema("inventory_domain")
+}
+
+model InventoryItemPhoto {
+  id             String        @id @default(uuid()) @db.Uuid
+  itemId         String        @map("item_id") @db.Uuid
+
+  imageKey       String        @unique @map("image_key")
+  thumbnailKey   String        @unique @map("thumbnail_key")
+
+  mimeType       String        @map("mime_type")
+  imageBytes     Int           @map("image_bytes")
+  thumbnailBytes Int           @map("thumbnail_bytes")
+
+  width          Int
+  height         Int
+  sha256         String
+
+  isPrimary      Boolean       @default(false) @map("is_primary")
+  position       Int           @default(0)
+
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@index([itemId, isPrimary])
+  @@index([sha256])
+  @@map("inventory_item_photos")
+  @@schema("inventory_domain")
+}
